@@ -43635,6 +43635,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1413256093}
   - component: {fileID: 1413256094}
+  - component: {fileID: 1413256095}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -43672,6 +43673,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   y: 5
   speed: -15
+--- !u!114 &1413256095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1413256092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a8f37e33eafe714ba0c4d1e3eb79d6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  walls:
+  - {fileID: 4337215121459845243, guid: cdff1f502279f094bbb8cfa054b08d14, type: 3}
+  - {fileID: 137767181570353098, guid: 3cf4a48216f2015428bc0cc022e18093, type: 3}
+  - {fileID: 8607217951382961305, guid: 38e8df9c09552ef48b06e02243811100, type: 3}
+  - {fileID: 810289617733188739, guid: 971bc8a136ba3904eae80b770f9c0320, type: 3}
+  - {fileID: 3130520040367124337, guid: 79daf6bfe9941684c96622b48a69c28a, type: 3}
+  speed: 2.5
+  startX: -21.5
+  endX: 21.5
+  spawnPosition: {x: -21.5, y: 17.62, z: -7.15}
+  spawnRotation: {x: -0.5, y: -0.5, z: -0.5, w: 0.5}
 --- !u!850595691 &1467287307
 LightingSettings:
   m_ObjectHideFlags: 0
