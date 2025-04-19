@@ -9,21 +9,29 @@ public class BreadAgent : Agent
 {
     public GameObject ground;
     public GameObject area;
-    
+    public GameObject bread;
+
     public bool useVectorObs;
     Rigidbody m_AgentRb;
     Material m_GroundMaterial;
-    Renderer m_GroundRenderer;
+    Renderer m_Bread;
     BreadSettings m_BreadSettings;
     int m_Selection;
     StatsRecorder m_statsRecorder;
+
+    public int wallsPassed = 0;
+    public int maxWalls = 10;
+
+    public int difficultyLevel { get; private set; } = 1;
+    public int successfulLevel = 0;
+    public WallManager wallManager;
 
     public override void Initialize()
     {
         m_BreadSettings = FindObjectOfType<BreadSettings>();
         m_AgentRb = GetComponent<Rigidbody>();
-        m_GroundRenderer = ground.GetComponent<Renderer>();
-        m_GroundMaterial = m_GroundRenderer.material;
+        m_Bread = bread.GetComponent<Renderer>();
+        m_GroundMaterial = m_Bread.material;
         m_statsRecorder = Academy.Instance.StatsRecorder;
     }
 
@@ -32,14 +40,23 @@ public class BreadAgent : Agent
         if (useVectorObs)
         {
             sensor.AddObservation(StepCount / (float)MaxStep);
+
+            Vector3 scale = transform.localScale;
+            sensor.AddObservation(scale.x);
+            sensor.AddObservation(scale.y);
+
+            Vector2 hole = wallManager.lastHoleSize;
+            sensor.AddObservation(hole.x);
+            sensor.AddObservation(hole.y);
         }
+        
     }
 
     IEnumerator GoalScoredSwapGroundMaterial(Material mat, float time)
     {
-        m_GroundRenderer.material = mat;
+        m_Bread.material = mat;
         yield return new WaitForSeconds(time);
-        m_GroundRenderer.material = m_GroundMaterial;
+        m_Bread.material = m_GroundMaterial;
     }
 
     public void MoveAgent(ActionSegment<int> act)
@@ -48,6 +65,7 @@ public class BreadAgent : Agent
         var rotateDir = Vector3.zero;
 
         var action = act[0];
+        var action1 = act[1];
         switch (action)
         {
             case 1:
@@ -63,10 +81,44 @@ public class BreadAgent : Agent
                 rotateDir = transform.up * -1f;
                 break;
         }
+        switch (action1)
+        {
+            case 1:
+                grow();
+                break;
+            case 2:
+                shrink();
+                break;
+        }
+
         transform.Rotate(rotateDir, Time.deltaTime * 150f);
-        m_AgentRb.AddForce(dirToGo * m_BreadSettings.agentRunSpeed, ForceMode.VelocityChange);
+        Vector3 move = dirToGo * m_BreadSettings.agentRunSpeed * Time.fixedDeltaTime;
+        Debug.Log($"Move: {move} (Speed: {m_BreadSettings.agentRunSpeed})");
+        m_AgentRb.MovePosition(m_AgentRb.position + move);
     }
 
+    private float baseVolume = 1f;
+    void grow()
+    {
+        Vector3 scale = transform.localScale;
+        float newY = scale.y + 0.1f;
+        if (newY >= 2.4) return;
+        ApplyUniformVolume(newY);
+    }
+
+    void shrink()
+    {
+        Vector3 scale = transform.localScale;
+        float newY = Mathf.Max(0.1f, scale.y - 0.1f);
+        if (newY <= 0.4) return;
+        ApplyUniformVolume(newY);
+    }
+
+    void ApplyUniformVolume(float newY)
+    {
+        float otherAxis = Mathf.Sqrt(baseVolume / newY);
+        transform.localScale = new Vector3(otherAxis, newY, otherAxis);
+    }
     public override void OnActionReceived(ActionBuffers actionBuffers)
 
     {
@@ -74,8 +126,37 @@ public class BreadAgent : Agent
         MoveAgent(actionBuffers.DiscreteActions);
     }
 
-    void OnCollisionEnter(Collision col)
+    public void ChangeColor(bool isWrong)
     {
+        if(isWrong) StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.failMaterial, 0.5f));
+        else StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.goalScoredMaterial, 0.5f));
+    }
+
+    public void SetstatsRecorder(string name, float points)
+    {
+        m_statsRecorder.Add(name, points, StatAggregationMethod.Sum);
+    }
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("water"))
+        {
+            SetReward(-1f);
+            StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.failMaterial, 0.5f));
+            m_statsRecorder.Add("Water", 1, StatAggregationMethod.Sum);
+            EndEpisode();
+        }/*else if(col.gameObject.CompareTag("wall"))
+        {
+            SetReward(-1f);
+            StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.failMaterial, 0.5f));
+            m_statsRecorder.Add("Goal/Wrong", 1, StatAggregationMethod.Sum);
+            EndEpisode();
+        }
+        else if (col.gameObject.CompareTag("wallWin"))
+        {
+            SetReward(1f);
+            StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.goalScoredMaterial, 0.5f));
+            m_statsRecorder.Add("Goal/Correct", 1, StatAggregationMethod.Sum);
+        }*/
         /*if (col.gameObject.CompareTag("symbol_O_Goal") || col.gameObject.CompareTag("symbol_X_Goal"))
         {
            if ((m_Selection == 0 && col.gameObject.CompareTag("symbol_O_Goal")) ||
@@ -114,6 +195,15 @@ public class BreadAgent : Agent
         {
             discreteActionsOut[0] = 2;
         }
+
+        if (Input.GetKey(KeyCode.UpArrow))
+        {
+            discreteActionsOut[1] = 1;
+        }
+        else if (Input.GetKey(KeyCode.DownArrow))
+        {
+            discreteActionsOut[1] = 2;
+        }
     }
 
     public override void OnEpisodeBegin()
@@ -125,11 +215,32 @@ public class BreadAgent : Agent
 
         transform.position = new Vector3(9f + Random.Range(-5f, 5f), agentOffset - ground.transform.position.y, 9f+Random.Range(-5f, 5f)) + ground.transform.position;
         transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+        transform.localScale = Vector3.one;
+        
         m_AgentRb.velocity *= 0f;
+        wallsPassed = 0;
+
+        wallManager.StopAndClearWalls();
+        wallManager.StartGeneratingWalls();
 
         var goalPos = Random.Range(0, 2);
         
         m_statsRecorder.Add("Goal/Correct", 0, StatAggregationMethod.Sum);
         m_statsRecorder.Add("Goal/Wrong", 0, StatAggregationMethod.Sum);
+    }
+    public void OnLevelPassedSuccessfully()
+    {
+        successfulLevel++;
+        if (successfulLevel >= 3)
+        {
+            successfulLevel = 0;
+            difficultyLevel = Mathf.Clamp(difficultyLevel + 1, 1, 3);
+            Debug.Log("Dificultad aumentada a nivel: " + difficultyLevel);
+        }
+    }
+
+    public void OnLevelFailed()
+    {
+        successfulLevel = 0;
     }
 }
