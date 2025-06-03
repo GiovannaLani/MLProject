@@ -22,6 +22,8 @@ public class WallManager : MonoBehaviour
     public Vector2 lastHoleSize;
     public BreadAgent agent;
 
+    public Material wallMaterial;
+
     public void StartGeneratingWalls()
     {
         wallLoop = StartCoroutine(SpawnWallLoop());
@@ -73,7 +75,7 @@ public class WallManager : MonoBehaviour
         Vector2 holeSize = GetRandomAgentShapeHoleSize(agentCollider);
         Debug.Log("Difficulty: " + agent.difficultyLevel);
         if (agent.difficultyLevel == 1) holeSize = new Vector2(3, 3);
-        if (agent.difficultyLevel == 2) holeSize += new Vector2(0.5f, 0.5f);
+        if (agent.difficultyLevel >= 2) holeSize += new Vector2(0.5f, 0.5f);
         lastHoleSize = holeSize;
         float totalWidth = wallWidth;
         float holeWidth = holeSize.x;
@@ -100,6 +102,7 @@ public class WallManager : MonoBehaviour
         left.transform.SetParent(wall.transform);
         left.AddComponent<Wall>();
         left.GetComponent<Collider>().isTrigger = true;
+        left.GetComponent<Renderer>().material = wallMaterial;
 
         GameObject center = GameObject.CreatePrimitive(PrimitiveType.Cube);
         center.transform.localScale = new Vector3(holeWidth, wallHeight - holeSize.y, 0.1f);
@@ -108,6 +111,7 @@ public class WallManager : MonoBehaviour
         center.transform.SetParent(wall.transform);
         center.AddComponent<Wall>();
         center.GetComponent<Collider>().isTrigger = true;
+        center.GetComponent<Renderer>().material = wallMaterial;
 
         GameObject right = GameObject.CreatePrimitive(PrimitiveType.Cube);
         right.transform.localScale = new Vector3(rightWidth, wallHeight, 0.1f);
@@ -116,6 +120,7 @@ public class WallManager : MonoBehaviour
         right.transform.SetParent(wall.transform);
         right.AddComponent<Wall>();
         right.GetComponent<Collider>().isTrigger = true;
+        right.GetComponent<Renderer>().material = wallMaterial;
 
         GameObject winWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
         winWall.transform.localScale = new Vector3(wallWidth, wallHeight, 0.1f);

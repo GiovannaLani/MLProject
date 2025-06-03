@@ -7,6 +7,9 @@ TagManager:
   - wall
   - wallWin
   - water
+  - FxTemporaire
+  - Agua
+  - PanFlotante
   layers:
   - Default
   - TransparentFX

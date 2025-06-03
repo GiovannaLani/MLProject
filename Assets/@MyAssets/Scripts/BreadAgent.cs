@@ -22,7 +22,7 @@ public class BreadAgent : Agent
     public int wallsPassed = 0;
     public int maxWalls = 10;
 
-    public int difficultyLevel { get; private set; } = 1;
+    public int difficultyLevel { get; private set; } = 2;
     public int successfulLevel = 0;
     public WallManager wallManager;
 
@@ -44,10 +44,10 @@ public class BreadAgent : Agent
             Vector3 scale = transform.localScale;
             sensor.AddObservation(scale.x);
             sensor.AddObservation(scale.y);
-
             Vector2 hole = wallManager.lastHoleSize;
             sensor.AddObservation(hole.x);
             sensor.AddObservation(hole.y);
+            Debug.Log("scale: "+scale.x + " "+scale.y+" hole "+hole.x+ " "+hole.y);
         }
         
     }
@@ -93,7 +93,6 @@ public class BreadAgent : Agent
 
         transform.Rotate(rotateDir, Time.deltaTime * 150f);
         Vector3 move = dirToGo * m_BreadSettings.agentRunSpeed * Time.fixedDeltaTime;
-        Debug.Log($"Move: {move} (Speed: {m_BreadSettings.agentRunSpeed})");
         m_AgentRb.MovePosition(m_AgentRb.position + move);
     }
 
@@ -119,8 +118,8 @@ public class BreadAgent : Agent
         float otherAxis = Mathf.Sqrt(baseVolume / newY);
         transform.localScale = new Vector3(otherAxis, newY, otherAxis);
     }
-    public override void OnActionReceived(ActionBuffers actionBuffers)
 
+    public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         AddReward(-1f / MaxStep);
         MoveAgent(actionBuffers.DiscreteActions);
@@ -136,6 +135,7 @@ public class BreadAgent : Agent
     {
         m_statsRecorder.Add(name, points, StatAggregationMethod.Sum);
     }
+
     void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("water"))
@@ -144,36 +144,7 @@ public class BreadAgent : Agent
             StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.failMaterial, 0.5f));
             m_statsRecorder.Add("Water", 1, StatAggregationMethod.Sum);
             EndEpisode();
-        }/*else if(col.gameObject.CompareTag("wall"))
-        {
-            SetReward(-1f);
-            StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.failMaterial, 0.5f));
-            m_statsRecorder.Add("Goal/Wrong", 1, StatAggregationMethod.Sum);
-            EndEpisode();
         }
-        else if (col.gameObject.CompareTag("wallWin"))
-        {
-            SetReward(1f);
-            StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.goalScoredMaterial, 0.5f));
-            m_statsRecorder.Add("Goal/Correct", 1, StatAggregationMethod.Sum);
-        }*/
-        /*if (col.gameObject.CompareTag("symbol_O_Goal") || col.gameObject.CompareTag("symbol_X_Goal"))
-        {
-           if ((m_Selection == 0 && col.gameObject.CompareTag("symbol_O_Goal")) ||
-                (m_Selection == 1 && col.gameObject.CompareTag("symbol_X_Goal")))
-            {
-                SetReward(1f);
-                StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.goalScoredMaterial, 0.5f));
-                m_statsRecorder.Add("Goal/Correct", 1, StatAggregationMethod.Sum);
-            }
-            else
-            {
-                SetReward(-0.1f);
-                StartCoroutine(GoalScoredSwapGroundMaterial(m_BreadSettings.failMaterial, 0.5f));
-                m_statsRecorder.Add("Goal/Wrong", 1, StatAggregationMethod.Sum);
-            }
-            EndEpisode();
-        }*/
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -209,7 +180,6 @@ public class BreadAgent : Agent
     public override void OnEpisodeBegin()
     {
         var agentOffset = 14.2f;
-        var blockOffset = 0f;
         m_Selection = Random.Range(0, 2);
         
 
@@ -234,8 +204,7 @@ public class BreadAgent : Agent
         if (successfulLevel >= 3)
         {
             successfulLevel = 0;
-            difficultyLevel = Mathf.Clamp(difficultyLevel + 1, 1, 3);
-            Debug.Log("Dificultad aumentada a nivel: " + difficultyLevel);
+            if(difficultyLevel<2) difficultyLevel ++;
         }
     }
 
