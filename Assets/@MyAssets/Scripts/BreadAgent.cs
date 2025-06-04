@@ -22,7 +22,7 @@ public class BreadAgent : Agent
     public int wallsPassed = 0;
     public int maxWalls = 10;
 
-    public int difficultyLevel { get; private set; } = 2;
+    public int difficultyLevel { get; private set; } = 1;
     public int successfulLevel = 0;
     public WallManager wallManager;
 
